@@ -13,7 +13,8 @@
 - install pipenv and go into directory, use command to install packages:  
   > pipenv install
 
-- to run the app use command:  
+- to run the app use commands:  
+  > pipenv shell
   > python run.py
 
 It will create a database file called api.db and create the tables auto from models.
