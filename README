@@ -1,0 +1,25 @@
+# FLASK API
+
+## REQS
+- python_version = "3.6"
+- flask = "*"
+- flask-sqlalchemy = "*"
+- flask-marshmallow = "*"
+- marshmallow-sqlalchemy = "*"
+- flask-bcrypt = "*"
+- pyjwt = "*"
+
+## SETUP
+- install pipenv and go into directory, use command to install packages:  
+  > pipenv install
+
+- to run the app use command:  
+  > python run.py
+
+It will create a database file called api.db and create the tables auto from models.
+By default: DEBUG = TRUE, SQL_ALCHEMY_ECHO = TRUE.  (for dev logs)
+
+## TESTING
+- use postman and follow routes from project (seriously)
+- for forms use x-www-form-urlencoded or raw (json)
+- name of header for auth required/optional : x-token
