@@ -1,0 +1,5 @@
+DEBUG = True
+SQLALCHEMY_DATABASE_URI = 'sqlite:///api.db'
+SQLALCHEMY_ECHO = True
+SQLALCHEMY_TRACK_MODIFICATIONS = False
+SECRET_KEY = 'whatiswallou'
