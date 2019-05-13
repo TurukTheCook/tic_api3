@@ -1,116 +1,31 @@
 from flask import Blueprint, jsonify, request
 from sqlalchemy import exc
-from functools import wraps
 from datetime import datetime, timedelta
-import jwt
 import re
 
 # personal imports
-from models import User, UserSchema, Token
-from app import app, db, flask_bcrypt
-
-# token decorators
-# 1st blocks workflow and return error if no token of wrong token
-def token_required(f):
-    @wraps(f)
-    def decorated(*args, **kwargs):
-        token = request.headers.get('x-token')
-
-        if token is None:
-            return jsonify({
-                'message': 'Unauthorized',
-            }), 401
-
-        try: 
-            decoded = jwt.decode(token, app.config['SECRET_KEY'])
-            current_user = User.query.filter_by(id = decoded['id']).first()
-        except:
-            return jsonify({
-                'message': 'Unauthorized',
-            }), 401
-
-        return f(current_user, *args, **kwargs)
-
-    return decorated
-
-# 2nd return no error on missing token 
-def token_optional(f):
-    @wraps(f)
-    def decorated(*args, **kwargs):
-        token = request.headers.get('x-token')
-
-        if token is None:
-            current_user = None
-            return f(current_user, *args, **kwargs)
-
-        try: 
-            data = jwt.decode(token, app.config['SECRET_KEY'])
-            current_user = User.query.filter_by(id = data['id']).first()
-        except:
-            return jsonify({
-                'message': 'Unauthorized',
-            }), 401
-
-        return f(current_user, *args, **kwargs)
-
-    return decorated
+from models import User, UserSchema
+from app import db, flask_bcrypt
+from routes.auth import token_optional, token_required
 
 #######################################
 ### STARTING TO DEFINE ROUTES HERE ####
 #######################################
 users_api = Blueprint('users_api', __name__)
 
-# auth
-@users_api.route('/auth', methods=['POST'])
-def auth():
-    data = request.get_json() or request.form
-    login = data.get('login')
-    password = data.get('password')
-
-    pattern = re.compile(r'[a-zA-Z0-9_-]*')
-    
-    if (
-        login is None or type(login) is not str or
-        password is None or type(password) is not str
-        ):
-        return jsonify({
-            'message': 'Bad request',
-            'code': 10001,
-            'data': ''
-        }), 400
-
-    if pattern.fullmatch(login):
-        user = User.query.filter_by(username = login).first()
-    else:
-        user = User.query.filter_by(email = login).first()
-
-    if not user:
-        return jsonify({
-            'message': 'Not found',
-        }), 404
-
-    if flask_bcrypt.check_password_hash(user.password, password):
-        token = jwt.encode({'id': user.id}, app.config['SECRET_KEY']).decode('utf-8')
-
-        return jsonify({
-            'message': 'OK',
-            'data' : token
-        }), 200
-
-    return jsonify({
-        'message': 'Bad request',
-        'code': 10010, # password doesn't match
-        'data': ''
-    }), 400
-
 # get all users
 @users_api.route('/users', methods=['GET'])
 def getUsers():
     query_params = request.args
+    pseudo = query_params.get('pseudo', None, type=str)
     page = query_params.get('page', type=int)
     perPage = query_params.get('perPage', type=int)
 
-    paginate = User.query.paginate(page = page, per_page = perPage, error_out = False) # if error_out = False, page and perPage defauls to 1 & 20 respectivly
+    if pseudo:
+        paginate = User.query.filter_by(pseudo = pseudo).paginate(page = page, per_page = perPage, error_out = False) # if error_out = False, page and perPage defauls to 1 & 20 respectivly
+    else:
+        paginate = User.query.paginate(page = page, per_page = perPage, error_out = False) # if error_out = False, page and perPage defauls to 1 & 20 respectivly
+    
     users = paginate.items
     total = paginate.pages # total of pages for parameter perPage
 
@@ -130,10 +45,10 @@ def getUsers():
     })
 
 # get one user
-@users_api.route('/user/<int:id>', methods=['GET'])
+@users_api.route('/user/<int:userId>', methods=['GET'])
 @token_optional
-def getUser(current_user, id):
-    user = User.query.filter_by(id=id).first()
+def getUser(current_user, userId):
+    user = User.query.filter_by(id=userId).first()
 
     if not user:
         return jsonify({
@@ -208,10 +123,10 @@ def createUser():
     }), 201
 
 # delete a user
-@users_api.route('/user/<int:id>', methods=['DELETE'])
+@users_api.route('/user/<int:userId>', methods=['DELETE'])
 @token_required
-def deleteUser(current_user, id):
-    user = User.query.filter_by(id=id).first()
+def deleteUser(current_user, userId):
+    user = User.query.filter_by(id=userId).first()
 
     if not user:
         return jsonify({
@@ -229,10 +144,10 @@ def deleteUser(current_user, id):
     return jsonify({}), 204
 
 # modify a user
-@users_api.route('/user/<int:id>', methods=['PUT'])
+@users_api.route('/user/<int:userId>', methods=['PUT'])
 @token_required
-def modifyUser(current_user, id):
-    user = User.query.filter_by(id=id).first()
+def modifyUser(current_user, userId):
+    user = User.query.filter_by(id=userId).first()
 
     if not user:
         return jsonify({

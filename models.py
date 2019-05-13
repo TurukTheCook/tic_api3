@@ -6,6 +6,10 @@
 from app import db, ma
 from datetime import datetime
 
+################
+#### MODELS ####
+################
+
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(100), unique=True, nullable=False)
@@ -45,6 +49,10 @@ class Comment(db.Model):
     body = db.Column(db.Text, nullable=False)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     video_id = db.Column(db.Integer, db.ForeignKey('video.id'), nullable=False)
+
+#################
+#### SCHEMAS ####
+#################
 
 class UserSchema(ma.ModelSchema):
     class Meta:
