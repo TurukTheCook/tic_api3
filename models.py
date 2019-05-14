@@ -57,3 +57,19 @@ class Comment(db.Model):
 class UserSchema(ma.ModelSchema):
     class Meta:
         model = User
+
+class VideoSchema(ma.ModelSchema):
+    class Meta:
+        model = Video
+
+class VideoFormatSchema(ma.ModelSchema):
+    class Meta:
+        model = Video_Format
+
+class TokenSchema(ma.ModelSchema):
+    class Meta:
+        model = Token
+
+class CommentSchema(ma.ModelSchema):
+    class Meta:
+        model = Comment

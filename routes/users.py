@@ -87,7 +87,7 @@ def createUser():
         ):
         return jsonify({
             'message': 'Bad request',
-            'code': 10001,
+            'code': 10001, # invalid form
             'data': ''
         }), 400
 
