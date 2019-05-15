@@ -133,7 +133,7 @@ def deleteUser(current_user, userId):
             'message': 'Not found',
         }), 404
 
-    if current_user.id != user.id:
+    if (current_user is None or current_user.id != user.id):
         return jsonify({
             'message': 'Forbidden',
         }), 403
@@ -154,7 +154,7 @@ def modifyUser(current_user, userId):
             'message': 'Not found',
         }), 404
     
-    if current_user.id != user.id:
+    if (current_user is None or current_user.id != user.id):
         return jsonify({
             'message': 'Forbidden',
         }), 403

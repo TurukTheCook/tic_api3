@@ -2,8 +2,8 @@ from flask import Blueprint, jsonify, request
 from werkzeug import secure_filename
 from sqlalchemy import exc
 from datetime import datetime, timedelta
-import re
 import magic
+import re
 
 # personal imports
 from models import User, UserSchema, Video, Video_Format, VideoSchema, VideoFormatSchema
@@ -33,16 +33,7 @@ def createVideo(current_user, userId):
     # see: http://flask.pocoo.org/docs/1.0/patterns/fileuploads/
     # and: https://werkzeug.palletsprojects.com/en/0.14.x/datastructures/#werkzeug.datastructures.FileStorage
     # and: https://developer.mozilla.org/en-US/docs/Web/HTTP/Basics_of_HTTP/MIME_types/Complete_list_of_MIME_types
-
-    if ('file' not in request.files or
-        request.files['file'].filename == ''):
-        return jsonify({
-            'message': 'Bad request',
-            'code': 10020, # no file 
-            'data': ''
-        }), 400
-
-    file = request.files['file']
+    ### user verif
     user = User.query.filter_by(id=userId).first()
 
     if not user:
@@ -50,11 +41,25 @@ def createVideo(current_user, userId):
             'message': 'User not found',
         }), 404
     
-    if current_user.id != user.id:
+    if (current_user is None or current_user.id != user.id):
         return jsonify({
             'message': 'Forbidden',
         }), 403
-    
+
+    ### file form verif
+    if ('source' not in request.files or
+        request.files['source'].filename == ''):
+        return jsonify({
+            'message': 'Bad request',
+            'code': 10020, # no file 
+            'data': ''
+        }), 400
+
+    file = request.files['source']
+    data = request.get_json() or request.form
+    name = data.get('name')
+
+    ### file mimetype check and save to storage
     pattern = re.compile(r'^video\/')
     file_mimetype = magic.from_buffer(file.read(1024), mime=True)
 
@@ -68,9 +73,36 @@ def createVideo(current_user, userId):
             'data': ''
         }), 400
 
-    # TODO: save path to database etc..
+    ## save to db
+    try:
+        newVideo = Video(
+            name = name or secure_filename(file.filename),
+            source = (app.config['UPLOAD_FOLDER'] + file_path),
+            user_id = user.id,
+            created_at = datetime.utcnow()
+        )
+        db.session.add(newVideo)
+        db.session.commit()
+    except exc.IntegrityError as err:
+        db.session.rollback()
+        return jsonify({
+            'message': 'Bad request',
+            'data': err.args
+        }), 400
+    except Exception as err:
+        db.session.rollback()
+        return jsonify({
+            'message': 'Internal server error',
+            'data': err.args
+        }), 500
 
-    return ''
+    schema = VideoSchema(only=('id', 'name', 'source', 'view', 'enabled', 'user', 'formats', 'created_at'))
+    output = schema.dump(newVideo).data
+
+    return jsonify({
+        'message': 'OK',
+        'data': output
+    }), 201
 
 # encoding video
 @videos_api.route('/video/<int:videoId>', methods=['PATCH'])
