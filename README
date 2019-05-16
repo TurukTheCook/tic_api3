@@ -24,3 +24,9 @@ By default: DEBUG = TRUE, SQL_ALCHEMY_ECHO = TRUE.  (for dev logs)
 - use postman and follow routes from project (seriously)
 - for forms use x-www-form-urlencoded or raw (json)
 - name of header for auth required/optional : x-token
+
+## BUILD DOCKER IMAGE
+./build.sh
+
+## RUN DOCKER IMAGE
+./docker_run.sh
