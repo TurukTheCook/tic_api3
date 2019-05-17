@@ -61,9 +61,9 @@ def getUser(current_user, userId):
         schema = UserSchema(only=('id', 'username', 'pseudo', 'created_at'))
 
     output = schema.dump(user).data
-    video_schema = VideoSchema(many=True)
-    videos = Video.query.filter_by(user_id=userId).all()
-    output['videos'] = video_schema.dump(videos).data
+    # video_schema = VideoSchema(many=True)
+    # videos = Video.query.filter_by(user_id=userId).all()
+    # output['videos'] = video_schema.dump(videos).data
 
     return jsonify({
         'message': 'OK',
