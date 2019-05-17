@@ -1,4 +1,4 @@
-from flask import Blueprint, jsonify, request
+from flask import Blueprint, jsonify, request, send_from_directory
 from werkzeug import secure_filename
 from sqlalchemy import exc
 from datetime import datetime, timedelta
@@ -105,10 +105,10 @@ def createVideo(current_user, userId):
     file = request.files['source']
     data = request.get_json() or request.form
     name = data.get('name')
-
     ### file mimetype check and save to storage
     pattern = re.compile(r'^video\/')
     file_mimetype = magic.from_buffer(file.read(1024), mime=True)
+    file.stream.seek(0)
 
     if pattern.match(file_mimetype):
         file_path = secure_filename(user.username + '_' + str(datetime.utcnow()) + '_' + file.filename)
@@ -190,6 +190,7 @@ def encodeVideo(current_user, videoId):
     ### file mimetype check and save to storage
     pattern = re.compile(r'^video\/')
     file_mimetype = magic.from_buffer(file.read(1024), mime=True)
+    file.stream.seek(0)
 
     if pattern.match(file_mimetype):
         file_path = secure_filename(user.username + '_' + str(datetime.utcnow()) + '_' + format + '_' + file.filename)
@@ -394,3 +395,7 @@ def getVideoComments(videoId):
             'total': total
         }
     })
+
+@videos_api.route('/uploads/<filename>')
+def uploaded_file(filename):
+    return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
