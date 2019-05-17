@@ -91,8 +91,30 @@ def auth():
         }), 404
 
     if flask_bcrypt.check_password_hash(user.password, password):
-        token = jwt.encode({'id': user.id, 'exp': datetime.utcnow() + timedelta(minutes=60)}, app.config['SECRET_KEY']).decode('utf-8')
+        expired_date = datetime.utcnow() + timedelta(minutes=60)
+        token = jwt.encode({'id': user.id, 'exp': expired_date}, app.config['SECRET_KEY']).decode('utf-8')
 
+        try:
+            newToken = Token(
+                code = token,
+                expired_at = expired_date,
+                user_id = user.id
+            )
+            db.session.add(newToken)
+            db.session.commit()
+        except exc.IntegrityError as err:
+            db.session.rollback()
+            return jsonify({
+                'message': 'Bad request',
+                'data': err.args
+            }), 400
+        except Exception as err:
+            db.session.rollback()
+            return jsonify({
+                'message': 'Internal server error',
+                'data': err.args
+            }), 500
+        
         return jsonify({
             'message': 'OK',
             'data' : token
