@@ -4,7 +4,7 @@ from datetime import datetime, timedelta
 import re
 
 # personal imports
-from models import User, UserSchema
+from models import User, UserSchema, Video, VideoSchema
 from app import db, flask_bcrypt
 from routes.auth import token_optional, token_required
 
@@ -18,8 +18,8 @@ users_api = Blueprint('users_api', __name__)
 def getUsers():
     query_params = request.args
     pseudo = query_params.get('pseudo', None, type=str)
-    page = query_params.get('page', type=int)
-    perPage = query_params.get('perPage', type=int)
+    page = query_params.get('page', 1, type=int)
+    perPage = query_params.get('perPage', 20, type=int)
 
     if pseudo:
         paginate = User.query.filter_by(pseudo = pseudo).paginate(page = page, per_page = perPage, error_out = False) # if error_out = False, page and perPage defauls to 1 & 20 respectivly
@@ -56,11 +56,14 @@ def getUser(current_user, userId):
         }), 404
 
     if current_user is not None and current_user.id == user.id:
-        schema = UserSchema(only=('id', 'username', 'pseudo', 'email', 'created_at', 'password'))
+        schema = UserSchema(only=('id', 'username', 'pseudo', 'email', 'created_at', 'password', 'videos'))
     else :
         schema = UserSchema(only=('id', 'username', 'pseudo', 'created_at'))
 
     output = schema.dump(user).data
+    video_schema = VideoSchema(many=True)
+    videos = Video.query.filter_by(user_id=userId).all()
+    output['videos'] = video_schema.dump(videos).data
 
     return jsonify({
         'message': 'OK',
@@ -94,7 +97,7 @@ def createUser():
     try:
         newUser = User(
             username = username,
-            pseudo = pseudo or None,
+            pseudo = pseudo or username,
             email = email,
             password = flask_bcrypt.generate_password_hash(password, rounds=10).decode('utf-8'),
             created_at = datetime.utcnow()
@@ -181,9 +184,9 @@ def modifyUser(current_user, userId):
         }), 400
 
     try:
-        user.username = username
+        user.username = username #unique
         user.pseudo = pseudo or None
-        user.email = email
+        user.email = email #unique
         user.password = flask_bcrypt.generate_password_hash(password, rounds=10).decode('utf-8')
         db.session.commit()
     except exc.IntegrityError as err:

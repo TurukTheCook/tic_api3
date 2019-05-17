@@ -37,33 +37,21 @@ class Video_Format(db.Model):
     uri = db.Column(db.String(100), nullable=False)
     video_id = db.Column(db.Integer, db.ForeignKey('video.id'), nullable=False)
 
-class Token(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    code = db.Column(db.String(255), nullable=False)
-    expired_at = db.Column(db.DateTime, default=datetime.utcnow())
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-
 class Comment(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     body = db.Column(db.Text, nullable=False)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     video_id = db.Column(db.Integer, db.ForeignKey('video.id'), nullable=False)
 
+class Token(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    code = db.Column(db.String(255), nullable=False)
+    expired_at = db.Column(db.DateTime, default=datetime.utcnow())
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+
 #################
 #### SCHEMAS ####
 #################
-
-class UserSchema(ma.ModelSchema):
-    class Meta:
-        model = User
-
-class VideoSchema(ma.ModelSchema):
-    class Meta:
-        model = Video
-
-class VideoFormatSchema(ma.ModelSchema):
-    class Meta:
-        model = Video_Format
 
 class TokenSchema(ma.ModelSchema):
     class Meta:
@@ -72,3 +60,18 @@ class TokenSchema(ma.ModelSchema):
 class CommentSchema(ma.ModelSchema):
     class Meta:
         model = Comment
+
+class VideoFormatSchema(ma.ModelSchema):
+    class Meta:
+        model = Video_Format
+
+class VideoSchema(ma.ModelSchema):
+    formats = ma.Nested(VideoFormatSchema, many=True)
+    comments = ma.Nested(CommentSchema, many=True)
+    class Meta:
+        model = Video
+
+class UserSchema(ma.ModelSchema):
+    videos = ma.Nested(VideoSchema, many=True)
+    class Meta:
+        model = User
